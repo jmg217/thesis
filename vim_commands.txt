@@ -1,0 +1,7 @@
+/red: this searches for the word red
+A: goes to end of line in insert mode
+<linenumber>gg: brings the cursor to the given linenumber
+k: move cursor immediately up
+j:move cursor immediatey down
+^: move to beginning of line
+$: move to end of line
