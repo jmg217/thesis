@@ -5,3 +5,5 @@ k: move cursor immediately up
 j:move cursor immediatey down
 ^: move to beginning of line
 $: move to end of line
+y (in visual mode. press v): yank
+p (in visual mode. press v): paste
