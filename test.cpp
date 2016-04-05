@@ -27,7 +27,7 @@ int integer;
 std::vector < double > X0;
 std::vector < double > delta;
 std::vector <double> sigma;
-
+std::vector <double > asset_amount;
 std::istringstream ss(settings[0]);
 std::string token;
 while(std::getline(ss, token, ',')) 
@@ -61,6 +61,13 @@ int N=atoi(settings[9].c_str());
 double quantile=atof(settings[10].c_str());
 int num_assets=atof(settings[11].c_str());
 
+std::istringstream ss4(settings[12]);
+while(std::getline(ss4, token, ','))
+    {
+        asset_amount.push_back(atof(token.c_str()));
+    }
+
+
 if(X0.size() != num_assets || sigma.size() != num_assets || delta.size() !=num_assets){
           std::cout<<"Either the starting price, volatility, number of assets or dividend yield was not specified for all assets"<<std::endl;
            exit (EXIT_FAILURE);
@@ -78,6 +85,9 @@ for(integer=0; integer<sigma.size(); integer++){
     std::cout<<"volatility="<<sigma[integer]<<std::endl;
 }
 
+for(integer=0; integer<asset_amount.size(); integer++){
+    std::cout<<"asset amount="<<asset_amount[integer]<<std::endl;
+}
 for(integer=0; integer<delta.size(); integer++){
     std::cout<<"dividend yield="<<delta[integer]<<std::endl;
 }

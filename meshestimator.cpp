@@ -5,11 +5,17 @@
 #include <stdlib.h>
 #include <fstream>
 #include <vector>
+#include <sstream>
 
 //this function returns the payoff value
-double payoff(double x, double k){
+double payoff(std::vector<std::vector< std::vector<double> > >& X, double k, std::vector<double>& asset_amount, int i, int j){
 double h;
-h=k-x;
+//h=k-x;
+h=0;
+for(int l=0; l<asset_amount.size(); l++){
+	h+=asset_amount[l]*X[(m-1)-i][j][l];
+}
+h=k-h;
 	if(h<0){
 	h=0;
 	}
@@ -18,7 +24,7 @@ return h;
 }
 
 //this function returns the high bias mesh price
-double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector< std::vector<double> >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V){
+double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount){
 
 double H; //payoff variable 
 double C; //continuation value variable
@@ -35,7 +41,7 @@ tempvec.clear();
 
 	for(int j=0; j<b; j++){
 		if(i==0){
-		H=payoff(X[(m-1)-i][j], strike)*exp(-r*delta_t*(m-i));
+		H=payoff(X, strike, asset_amount, i, j)*exp(-r*delta_t*(m-i));	
 		tempvec.push_back(H);
 		}
 	
@@ -48,7 +54,7 @@ tempvec.clear();
 			}
 
 			C=(1/((double)b))*sum; //continuation value
-			H=payoff(X[(m-1)-i][j], strike)*exp(-r*delta_t*(m-i));
+			H=payoff(X, strike, asset_amount, i, j)*exp(-r*delta_t*(m-i));
 		
 			if(H>=C){
 			tempvec.push_back(H);

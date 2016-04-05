@@ -10,10 +10,10 @@
 #define PI 3.14159265358979323846
 
 //This function is contained within meshestimator.cpp
-double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector< std::vector<double> >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V);
+double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount);
 
 //This function is contained within patestimator.cpp.
-double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma, double delta, double X0, std::vector< std::vector<double> >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V);
+double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount);
 
 
 
@@ -56,7 +56,7 @@ rn=round(rn);
 return rn;
 }
 
-double density(double Xold, double  Xnew, double sigma, double r, double delta, double delta_t)// This function returns the transition density between node values.
+double density(double Xold, double  Xnew, std::vector<double> sigma, double r, std::vector<double> delta, double delta_t)// This function returns the transition density between node values.
 {
 double f, x;
 x=(1/(sigma*sqrt(delta_t)))*(log(Xnew)-log(Xold)-(r-delta-0.5*sigma*sigma)*delta_t);
@@ -91,6 +91,7 @@ int integer;
 std::vector < double > X0;
 std::vector < double > delta;
 std::vector <double> sigma;
+std::vector <double> asset_amount;
 
 std::istringstream ss(settings[0]);
 std::string token;
@@ -125,7 +126,13 @@ int N=atoi(settings[9].c_str());
 double quantile=atof(settings[10].c_str());
 int num_assets=atof(settings[11].c_str());
 
-if(X0.size() != num_assets || sigma.size() != num_assets || delta.size() !=num_assets){
+std::istringstream ss4(settings[12]);
+while(std::getline(ss4, token, ','))
+    {
+        asset_amount.push_back(atof(token.c_str()));
+    }
+
+if(X0.size() != num_assets || sigma.size() != num_assets || delta.size() !=num_assets || asset_amount.size() !=num_assets){
           std::cout<<"Either the starting price, volatility, number of assets or dividend yield was not specified for all assets"<<std::endl;
            exit (EXIT_FAILURE);
        }
@@ -147,6 +154,9 @@ for(integer=0; integer<delta.size(); integer++){
 }
 std::cout<<"number of iterations over path estimator="<<Path_estimator_iterations<<"\n"<<"strike  price="<<strike<<"\n"<<"number of nodes per time step="<<b<<"\n"<<"number mesh generations="<<N<<"\n"<<"Number of Assets="<<num_assets<<std::endl; 
 
+for(integer=0; integer<asset_amount.size(); integer++){
+    std::cout<<"asset amount="<<asset_amount[integer]<<std::endl;
+}
 
 
 //old input code
@@ -184,11 +194,13 @@ std::cout<<"The parameters of this simulation are:"<<"\n"<<"Starting Price="<<X0
 */
 
 //Mesh matrix
-std::vector< std::vector<double> > X;
+std::vector< std::vector< std::vector<double> > > X;
 //WEIGHTS 3-dimensional matrix for step 1 and beyond
 std::vector< std::vector< std::vector<double> > > W;
-//temp vector in MeshGen for-loop
-std::vector< double > myvector;
+//2-d temp vector in MeshGen for-loop
+std::vector < std::vector< double > > myvector;
+//temp vecotr in MeshGen for-loop
+std::vector<double > nodevector;
 //2 d temp vector in WeightsGen for-loop
 std::vector< std::vector<double> > dim2temp;
 //1 d vector in Weightsgen for-loop
@@ -217,20 +229,33 @@ for(int i=0; i<m; i++){
 	if(i==0){
 
 	for(int l=0; l<b; l++){
-		Z=boxmuller();//standard normally distributed variable 
-		Xi=X0 * (exp ((r-delta-0.5*sigma*sigma)*delta_t + sigma*sqrt(delta_t)*Z));//node value at the second time step
-		myvector.push_back(Xi);	//store the value in a temp vector
+
+		nodevector.clear();
+
+		for(int ll=0; ll<num_assets; ll++){
+			Z=boxmuller();//standard normally distributed variable 
+			Xi=X0[ll] * (exp ((r-delta[ll]-0.5*sigma[ll]*sigma[ll])*delta_t + sigma[ll]*sqrt(delta_t)*Z));//node value at the second time step
+			nodevector.push_back(Xi);
+		}
+		myvector.push_back(nodevector);	//store the value in a temp vector
+		
 	}
 	}
 
 	if(i>0){
 	
 	for(int j=0; j<b; j++){
-		Z=boxmuller();
-		Rn=UniRandom(b); 
-		Xi=X[i-1][Rn];
-		Xj=Xi * (exp ((r-delta-0.5*sigma*sigma)*delta_t + sigma*sqrt(delta_t)*Z));
-		myvector.push_back(Xj);
+	
+		nodevector.clear();
+		Rn=UniRandom(b);
+
+		for(int jj=0; jj<num_assets; jj++){
+			Z=boxmuller(); 
+			Xi=X[i-1][Rn][jj];
+			Xj=Xi * (exp ((r-delta[jj]-0.5*sigma[jj]*sigma[jj])*delta_t + sigma[jj]*sqrt(delta_t)*Z));
+			nodevector.push_back(Xj);
+		}	
+		myvector.push_back(nodevector);
 	}
 	}
 
@@ -262,7 +287,10 @@ dim2temp.clear();//temporary vector
 		wdenominator=0;
 	
 			for(int j=0; j<b; j++){
-			w=density(X[I-1][j], X[I][k], sigma, r, delta, delta_t);//step 1 in X is X[0] step 1 in W is W[1]	
+				w=1; //set w to 1 since it will be equal to a product
+				for(int jj=0; j<num_assets; jj++){
+					w*=density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t);//step 1 in X is X[0] step 1 in W is W[1]	
+					}
 			dim1temp.push_back(w);
 			wdenominator+=w; //this generates the denominator value in the weights formula
 			}
@@ -298,7 +326,7 @@ for(int q=1; q<m; q++){
 	}
 }
 
-V_0=MeshEstimator(strike, r, delta_t, b, m, X, W, V);//high bias option price
+V_0=MeshEstimator(strike, r, delta_t, b, m, X, W, V, asset_amount);//high bias option price
 Vvector.push_back(V_0);//vector containing high bias option prices
 Vtotal_sum+=V_0;
 
@@ -307,7 +335,7 @@ std::cout<<"High Bias price (V_0) for mesh iteration "<<iterator<<" is "<<V_0<<s
 //average over path estimators
 v_sum=0;
 for(int f=0; f<Path_estimator_iterations; f++){
-v_sum+=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V);
+v_sum+=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_amount);
 }
 
 v_0=(1/double(Path_estimator_iterations))*v_sum;
