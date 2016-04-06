@@ -8,16 +8,16 @@
 
 
 //declare transition density function. This is contained in meshgen.cpp
-double density(double Xold, double  Xnew, std::vector<double> sigma, double r, std::vector<double> delta, double delta_t);
+double density(double Xold, double  Xnew, double sigma, double r, double delta, double delta_t);
 //declare the box muller function. This is contained in meshgen.cpp
 double boxmuller();
 //this returns the payoff value
-double Payoff(std::vector<std::vector< std::vector<double> > >& X, double k, std::vector<double>& asset_amount, int i, int j){
+double Payoff(std::vector<std::vector<double> > S, double k, std::vector<double>& asset_amount, int i){
 double h;
 //h=k-x;
 h=0;
 for(int l=0; l<asset_amount.size(); l++){
-	h+=asset_amount[l]*X[(m-1)-i][j][l];
+	h+=asset_amount[l]*S[i][l];
 }
 h=k-h;
 	if(h<0){
@@ -29,7 +29,7 @@ return h;
 
 
 //This function returns a low bias price of an option.
-double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double> X0, std::vector<std::vector< std::vector<double> > >& X , std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount){
+double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0, std::vector<std::vector< std::vector<double> > >& X , std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount){
 
 double v_0, S_i, Z, C, H, sum, weight, w_s, sum_Z;
 
@@ -111,7 +111,7 @@ for(int i=0; i<m; i++){
 	}	
 	
 
-H=Payoff(S[i], strike)*exp(-r*delta_t*((i+1)));
+H=Payoff(S, strike, asset_amount, i)*exp(-r*delta_t*((i+1)));
 
 //check if continuation value is greater then the immediate payoff
 	if(H>=C || i==m-1){

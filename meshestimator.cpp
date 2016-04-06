@@ -13,7 +13,7 @@ double h;
 //h=k-x;
 h=0;
 for(int l=0; l<asset_amount.size(); l++){
-	h+=asset_amount[l]*X[(m-1)-i][j][l];
+	h+=asset_amount[l]*X[i][j][l];
 }
 h=k-h;
 	if(h<0){
@@ -41,7 +41,7 @@ tempvec.clear();
 
 	for(int j=0; j<b; j++){
 		if(i==0){
-		H=payoff(X, strike, asset_amount, i, j)*exp(-r*delta_t*(m-i));	
+		H=payoff(X, strike, asset_amount, m-1-i, j)*exp(-r*delta_t*(m-i));	
 		tempvec.push_back(H);
 		}
 	
@@ -54,7 +54,7 @@ tempvec.clear();
 			}
 
 			C=(1/((double)b))*sum; //continuation value
-			H=payoff(X, strike, asset_amount, i, j)*exp(-r*delta_t*(m-i));
+			H=payoff(X, strike, asset_amount, m-1-i, j)*exp(-r*delta_t*(m-i));
 		
 			if(H>=C){
 			tempvec.push_back(H);

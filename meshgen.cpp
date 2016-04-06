@@ -13,9 +13,9 @@
 double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount);
 
 //This function is contained within patestimator.cpp.
-double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount);
+double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount);
 
-
+void print_high_payoff(int b, double m, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount);
 
 double round( double value )//This function rounds the double sent to it to the nearest integer.
 {
@@ -56,7 +56,7 @@ rn=round(rn);
 return rn;
 }
 
-double density(double Xold, double  Xnew, std::vector<double> sigma, double r, std::vector<double> delta, double delta_t)// This function returns the transition density between node values.
+double density(double Xold, double  Xnew, double sigma, double r, double delta, double delta_t)// This function returns the transition density between node values.
 {
 double f, x;
 x=(1/(sigma*sqrt(delta_t)))*(log(Xnew)-log(Xold)-(r-delta-0.5*sigma*sigma)*delta_t);
@@ -214,6 +214,7 @@ std::vector< double > vvector;
 //asset vector
 std::vector< double > assets;
 
+//std::cout<<"Before loop"<<std::endl;
 
 //for-loop over different meshes
 for(int iterator=0; iterator<N; iterator++){
@@ -263,6 +264,8 @@ X.push_back(myvector);
 
 }
 
+//std::cout<<"after loop"<<std::endl;
+
 
 //Weights generation for-loop 
 //NOTE: W^i_(j,k) IS REPRESENTED AT W[i][k][j] where k is at step i+1 and j is at step i.
@@ -281,14 +284,14 @@ dim2temp.clear();//temporary vector
 
 
 	if(I>0){
-	
+
 		for(int k=0; k<b; k++){	
 		dim1temp.clear();
 		wdenominator=0;
 	
 			for(int j=0; j<b; j++){
 				w=1; //set w to 1 since it will be equal to a product
-				for(int jj=0; j<num_assets; jj++){
+				for(int jj=0; jj<num_assets; jj++){
 					w*=density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t);//step 1 in X is X[0] step 1 in W is W[1]	
 					}
 			dim1temp.push_back(w);
@@ -306,6 +309,7 @@ dim2temp.clear();//temporary vector
 
 W.push_back(dim2temp); //mesh weights matrix
 }
+
 
 //some weights checking
 double check=0;
@@ -343,8 +347,10 @@ vvector.push_back(v_0);
 vtotal_sum+=v_0;
 
 std::cout<<"Low Bias price (v_0) for mesh iteration "<<iterator<<" is "<<v_0<<std::endl;
-}//this is the end of the loop over the whole process.
 
+
+}//this is the end of the loop over the whole process.
+print_high_payoff(b, m, X, V, asset_amount);
 //Calculate V(N) and v(N)
 V_0=(1/double(N))*Vtotal_sum;
 v_0=(1/double(N))*vtotal_sum;
@@ -371,6 +377,7 @@ std::ofstream outFile("results.txt", std::ios_base::app | std::ios_base::out);
 outFile << N <<"\t"<< b <<"\t"<< Path_estimator_iterations<<"\t"<< V_0 <<"\t"<< v_0 <<"\t"<< Verror+V_0 <<"\t"<< v_0-verror << std::endl;
 
 outFile.close();
+
 
 
 return 0;
