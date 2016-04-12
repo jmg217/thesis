@@ -47,22 +47,21 @@ tempvec.clear();
 	
 		else{
 //continue to develope continuation vale			
-			sum=0;
+		sum=0;
 			for(int k=0; k<b; k++){
-			sum+=(W[(m-i)][k][j])*V[i-1][k]; //m-i when i=1 is 10-1=9.when i=9 m-i=1. we get V_0 separately by using W[0][k][j]	
-		
+				sum+=(W[(m-i)][k][j])*V[i-1][k]; //m-i when i=1 is 10-1=9.when i=9 m-i=1. we get V_0 separately by using W[0][k][j]	
 			}
 
-			C=(1/((double)b))*sum; //continuation value
-			H=payoff(X, strike, asset_amount, m-1-i, j)*exp(-r*delta_t*(m-i));
+		C=(1/((double)b))*sum; //continuation value
+		H=payoff(X, strike, asset_amount, m-1-i, j)*exp(-r*delta_t*(m-i));
 		
 			if(H>=C){
-			tempvec.push_back(H);
+				tempvec.push_back(H);
 			
 			}
 
 			else{
-			tempvec.push_back(C);
+				tempvec.push_back(C);
 			
 			}	
 		}
