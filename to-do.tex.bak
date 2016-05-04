@@ -1,0 +1,26 @@
+\documentclass[11pt]{article}
+
+\usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
+
+\begin{document}
+
+\tableofcontents
+
+\title{Main-Project}
+\author{John Mark Geary}
+\date{\today}
+\maketitle
+
+
+\section{To-Do}
+
+
+\begin{enumerate}
+\item Graphs and illustrations.
+\item Focus on extra improvements at end of paper
+
+\end{enumerate}
+
+
+
+\end{document}

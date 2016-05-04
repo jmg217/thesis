@@ -15,11 +15,18 @@ double boxmuller();
 double Payoff(std::vector<std::vector<double> > S, double k, std::vector<double>& asset_amount, int i){
 double h;
 //h=k-x;
-h=0;
+//h=0;
+h=1;
+/*
 for(int l=0; l<asset_amount.size(); l++){
-	h+=asset_amount[l]*S[i][l];
+	h+=asset_amount[l]*exp(S[i][l]);
+}*/
+for(int l=0; l<asset_amount.size(); l++){
+         h*=exp(S[i][l]);
 }
-h=k-h;
+h=pow(h,1.0/(asset_amount.size()));
+h=h-k; 
+//h=h-k;
 	if(h<0){
 	h=0;
 	}
@@ -48,7 +55,8 @@ nodevector.clear();
 	if(i==0){
 		for(int ll=0; ll<asset_amount.size(); ll++){
 			Z=boxmuller();
-			S_i=X0[ll] * (exp((r-delta[ll]-0.5*sigma[ll]*sigma[ll])*delta_t + sigma[ll]*sqrt(delta_t)*Z));//the second value in the simulated path
+			//S_i=X0[ll] * (exp((r-delta[ll]-0.5*sigma[ll]*sigma[ll])*delta_t + sigma[ll]*sqrt(delta_t)*Z));//the second value in the simulated path
+			S_i=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
 			nodevector.push_back(S_i);
 		}
 	}
@@ -56,7 +64,8 @@ nodevector.clear();
 	else{
 		for(int jj=0; jj<asset_amount.size(); jj++){
 			Z=boxmuller();
-			S_i=S[i-1][jj]*(exp((r-delta[jj]-0.5*sigma[jj]*sigma[jj])*delta_t + sigma[jj]*sqrt(delta_t)*Z));//the simulate path values
+			//S_i=S[i-1][jj]*(exp((r-delta[jj]-0.5*sigma[jj]*sigma[jj])*delta_t + sigma[jj]*sqrt(delta_t)*Z));//the simulate path values
+			S_i=S[i-1][jj] +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z;
 			nodevector.push_back(S_i);
 		}
 	}

@@ -6,6 +6,8 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <iomanip>
+#include <algorithm>
 
 #define PI 3.14159265358979323846
 
@@ -15,14 +17,25 @@ double MeshEstimator(double strike, double r, double delta_t, int b, double m,  
 //This function is contained within patestimator.cpp.
 double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount);
 
-void print_high_payoff(int b, double m, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount);
+void print_high_payoff(int b, double m, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, std::vector< std::vector< std::vector<double> > >& W );
 
 double round( double value )//This function rounds the double sent to it to the nearest integer.
 {
   return floor( value + 0.5 );
 }
 
+double kahansum(std::vector<double> & sortvector){
+double sum=0, c=0, y, t;
 
+	for(int i=0; i<sortvector.size(); i++){
+		y=sortvector[i]-c;
+		t=sum+y;
+		c=(t-sum)-y;
+		sum=t;
+	}
+
+return sum;
+}
 
 double boxmuller()//This function uses the Box Muller algorithm to return standard normally distributed varibles.
 {
@@ -51,18 +64,20 @@ return Z1;
 int UniRandom(int b) //This function returns uniformally distributed variables in the interval (0,b-1)
 {
 double rn;
+int c;
 rn=((double)rand()/(double)RAND_MAX)*((double)(b-1));
 rn=round(rn);
-return rn;
+c=(int)rn;
+return c;
 }
 
 double density(double Xold, double  Xnew, double sigma, double r, double delta, double delta_t)// This function returns the transition density between node values.
 {
-double f, x;
-x=(1/(sigma*sqrt(delta_t)))*(log(Xnew)-log(Xold)-(r-delta-0.5*sigma*sigma)*delta_t);
-
-f= (1/(sigma*sqrt(delta_t)*Xnew))*(1/(sqrt(2*PI)))*exp(-0.5*x*x); // this is the transition density
-
+double f=0, x=0;
+//x=(1/(sigma*sqrt(delta_t)))*(log(Xnew)-log(Xold)-(r-delta-0.5*sigma*sigma)*delta_t);
+x=(1/(sigma*sqrt(delta_t)))*(Xnew-Xold-(r-delta-0.5*sigma*sigma)*delta_t);
+//f= (1/(sigma*sqrt(delta_t)*Xnew))*(1/(sqrt(2*PI)))*exp(-0.5*x*x); // this is the transition density
+f= (1/(sigma*sqrt(delta_t)))*(1/(sqrt(2*PI)))*exp(-0.5*x*x);
 return f;
 }
 
@@ -214,6 +229,8 @@ std::vector< double > vvector;
 //asset vector
 std::vector< double > assets;
 
+
+std::vector<double> sortvector;
 //std::cout<<"Before loop"<<std::endl;
 
 //for-loop over different meshes
@@ -228,6 +245,11 @@ for(int i=0; i<m; i++){
 	myvector.clear();
 
 	if(i==0){
+	
+	for(int init=0; init<num_assets; init++){
+	X0[init]=log(X0[init]);
+	}	
+
 
 	for(int l=0; l<b; l++){
 
@@ -235,7 +257,8 @@ for(int i=0; i<m; i++){
 
 		for(int ll=0; ll<num_assets; ll++){
 			Z=boxmuller();//standard normally distributed variable 
-			Xi=X0[ll] * (exp ((r-delta[ll]-0.5*sigma[ll]*sigma[ll])*delta_t + sigma[ll]*sqrt(delta_t)*Z));//node value at the second time step
+			//Xi=X0[ll] * (exp ((r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z));//node value at the second time step
+			Xi=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
 			nodevector.push_back(Xi);
 		}
 		myvector.push_back(nodevector);	//store the value in a temp vector
@@ -248,12 +271,14 @@ for(int i=0; i<m; i++){
 	for(int j=0; j<b; j++){
 	
 		nodevector.clear();
-		Rn=UniRandom(b);
-
+	//	Rn=UniRandom(b);
+//std::cout<<Rn<<std::endl;
 		for(int jj=0; jj<num_assets; jj++){
+			//std::cout<<"in loop"<<"\t"<<Rn<<std::endl;
 			Z=boxmuller(); 
-			Xi=X[i-1][Rn][jj];
-			Xj=Xi * (exp ((r-delta[jj]-0.5*sigma[jj]*sigma[jj])*delta_t + sigma[jj]*sqrt(delta_t)*Z));
+			Xi=X[i-1][j][jj];
+			//Xj=Xi * (exp ((r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z));
+			Xj=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z; 
 			nodevector.push_back(Xj);
 		}	
 		myvector.push_back(nodevector);
@@ -270,7 +295,7 @@ X.push_back(myvector);
 //Weights generation for-loop 
 //NOTE: W^i_(j,k) IS REPRESENTED AT W[i][k][j] where k is at step i+1 and j is at step i.
 for(int I=0; I<m; I++){
-
+//std::cout<<I<<std::endl;
 dim2temp.clear();//temporary vector
 	
 	if(I==0){
@@ -279,6 +304,7 @@ dim2temp.clear();//temporary vector
 			w=1;// all weights from the starting node are equal to 1
 		dim1temp.push_back(w);
 		dim2temp.push_back(dim1temp);
+	//std::cout<<"w1="<<w<<std::endl;
 		}
 	}
 
@@ -287,21 +313,53 @@ dim2temp.clear();//temporary vector
 
 		for(int k=0; k<b; k++){	
 		dim1temp.clear();
+		sortvector.clear();
+	//std::cout<<wdenominator<<std::endl;
 		wdenominator=0;
-	
+	//std::cout<<wdenominator<<std::endl;
+	//std::cout<<"k="<<k<<std::endl;
 			for(int j=0; j<b; j++){
-				w=1; //set w to 1 since it will be equal to a product
+			//std::cout<<j<<std::endl;	
+				w=1;
+				//w=0; //set w to 1 since it will be equal to a product
 				for(int jj=0; jj<num_assets; jj++){
-					w*=density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t);//step 1 in X is X[0] step 1 in W is W[1]	
+//std::cout<< w<<std::endl;
+//std::cout<<jj<<"\t"<<num_assets<<"\t"<<X[I-1][j][jj]<<"\t"<<X[I][k][jj]<<"\t"<<sigma[jj]<<"\t"<<delta[jj]<<"\t"<<r<<"\t"<<delta_t<<std::endl;
+					
+					//w = w + log(density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t));//step 1 in X is X[0] step 1 in W is W[1]	
+					w = w * density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t);
+				//std::cout<<jj<<"\t"<<w<<"\t"<<density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t)<<std::endl;
 					}
+			//w = exp(w);
 			dim1temp.push_back(w);
-			wdenominator+=w; //this generates the denominator value in the weights formula
+			sortvector.push_back(w);
+				
+			//wdenominator+=w; //this generates the denominator value in the weights formula
+			//std::cout<<j<<"\t"<<"DENOM="<<wdenominator<<"\t"<<"exp(LOG(W))="<< w<<std::endl;
+		
+                                                                                                                      
 			}
-			
+			std::sort(sortvector.begin(), sortvector.end());
+			wdenominator=kahansum(sortvector);
+				/*for(int sortvec=0; sortvec<b; sortvec++){
+					wdenominator+=sortvector[sortvec];
+		//	std::cout<<std::setprecision(15)<<sortvec<<"\t"<< wdenominator <<"\t"<<sortvector[sortvec]<< std::endl;
+				}*/
+			//wdenominator=log(wdenominator);
+		//	wdenominator=exp(wdenominator);
 			//devide each element by the denominator
 			for(int t=0; t<b; t++){
-			dim1temp[t]=(((double)b)*dim1temp[t])/wdenominator;
-			}		
+		//	std::cout<<dim1temp[t]<<"\t"<<wdenominator<<std::endl; 
+			dim1temp[t]=(((double)b)*(dim1temp[t]))/wdenominator;
+		/*	dim1temp[t]=dim1temp[t]-wdenominator;		
+			dim1temp[t]=((double)b)*exp(dim1temp[t]);*/
+		//	std::cout<<dim1temp[t]<<std::endl;
+			}
+			/*double Sumcheck=0;	
+			for(int sumcheck=0;sumcheck<b;sumcheck++){
+			Sumcheck+=dim1temp[sumcheck];
+			}	
+			std::cout<<Sumcheck<<std::endl;*/
 		dim2temp.push_back(dim1temp); //dim1 is full therefore we add it onto dim2 vector
 		}	
 	
@@ -309,8 +367,14 @@ dim2temp.clear();//temporary vector
 
 W.push_back(dim2temp); //mesh weights matrix
 }
-
-
+/*
+std::cout<<"W[0][0][0]="<<W[0][0][0]<<std::endl;                                                                                                                                 
+std::cout<<"W[0][1][0]="<<W[0][1][0]<<std::endl;
+std::cout<<"W[1][0][0]="<<W[1][0][0]<<std::endl;
+std::cout<<"W[1][1][0]="<<W[1][1][0]<<std::endl;
+std::cout<<"W[1][0][1]="<<W[1][0][1]<<std::endl;
+std::cout<<"W[1][1][1]="<<W[1][1][1]<<std::endl;
+*/
 //some weights checking
 double check=0;
 //check all the weights from X0 are 1
@@ -350,7 +414,7 @@ std::cout<<"Low Bias price (v_0) for mesh iteration "<<iterator<<" is "<<v_0<<st
 
 
 }//this is the end of the loop over the whole process.
-print_high_payoff(b, m, X, V, asset_amount);
+print_high_payoff(b, m, X, V, asset_amount,W);
 //Calculate V(N) and v(N)
 V_0=(1/double(N))*Vtotal_sum;
 v_0=(1/double(N))*vtotal_sum;

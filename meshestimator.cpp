@@ -11,11 +11,16 @@
 double payoff(std::vector<std::vector< std::vector<double> > >& X, double k, std::vector<double>& asset_amount, int i, int j){
 double h;
 //h=k-x;
-h=0;
+//h=0;
+h=1;
+/*for(int l=0; l<asset_amount.size(); l++){
+	h+=asset_amount[l]*exp(X[i][j][l]);
+}*/
 for(int l=0; l<asset_amount.size(); l++){
-	h+=asset_amount[l]*X[i][j][l];
+	h*=exp(X[i][j][l]);
 }
-h=k-h;
+h=pow(h,1.0/(asset_amount.size()));
+h=h-k;
 	if(h<0){
 	h=0;
 	}
@@ -49,10 +54,19 @@ tempvec.clear();
 //continue to develope continuation vale			
 		sum=0;
 			for(int k=0; k<b; k++){
-				sum+=(W[(m-i)][k][j])*V[i-1][k]; //m-i when i=1 is 10-1=9.when i=9 m-i=1. we get V_0 separately by using W[0][k][j]	
+//std::cout<< sum<<std::endl;			
+			sum+=(W[(m-i)][k][j])*V[i-1][k]; //m-i when i=1 is 10-1=9.when i=9 m-i=1. we get V_0 separately by using W[0][k][j]	
+			/*if(m-i==2 && j == 50){
+			std::cout<<"k="<<k<<"\t"<<"weight="<<W[(m-i)][k][j]<<"\t"<<"V_i+1="<<V[i-1][k]<<std::endl;
+			}*/	
 			}
-
+	
 		C=(1/((double)b))*sum; //continuation value
+			
+		
+		/*if(m-i==2 && j == 50){
+		std::cout<<"contin value="<< C<<std::endl; 
+		}*/
 		H=payoff(X, strike, asset_amount, m-1-i, j)*exp(-r*delta_t*(m-i));
 		
 			if(H>=C){
